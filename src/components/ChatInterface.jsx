@@ -245,26 +245,32 @@ const ChatInterface = ({
 
   const handleSubmit = async () => {
     if (!inputValue.trim() || isTyping) return;
-
+  
     const message = inputValue.trim();
     setInputValue('');
     setIsTyping(true);
-
+  
     try {
-      const response = await onSendMessage(message);
-      if (!response) {
-        throw new Error('Empty response from bot');
-      }
-
-      // Use the prop function instead of setMessages
-      onMessagesUpdate([...messages, { role: 'user', content: message }, { role: 'assistant', content: response }]);
-
+      const responseText = await onSendMessage(message);
+      
+      onMessagesUpdate([
+        ...messages,
+        { role: 'user', content: message },
+        { 
+          role: 'assistant', 
+          content: responseText || "Let's try that again..." 
+        }
+      ]);
+  
     } catch (error) {
-      console.error('Error sending message:', error);
-      onMessagesUpdate([...messages, { role: 'user', content: message }, {
-        role: 'assistant',
-        content: "I apologize, but I'm having trouble processing your request. Please try again."
-      }]);
+      console.error('Failed to get response:', error);
+      onMessagesUpdate([
+        ...messages,
+        { 
+          role: 'assistant', 
+          content: "I'm having trouble responding. Try again?" 
+        }
+      ]);
     } finally {
       setIsTyping(false);
     }

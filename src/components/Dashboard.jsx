@@ -716,36 +716,36 @@ const Dashboard = () => {
 
   const handleSendMessage = async (message) => {
     if (!selectedBot) return;
-
-    // Add user message
+  
+    // Add user message first
     const userMessage = { role: 'user', content: message };
     setMessages(prev => ({
       ...prev,
       [selectedBot.id]: [...(prev[selectedBot.id] || []), userMessage]
     }));
-
+  
     try {
-      // Get bot response
-      const response = await generateResponse(message, selectedBot.id, {
+      const responseText = await generateResponse(message, selectedBot.id, {
         recentMessages: messages[selectedBot.id] || []
       });
       
-      // Make sure we have a valid response
-      if (!response) {
-        throw new Error('Empty response from bot');
-      }
-
-      // Add bot response - use the response directly since it's already processed in api.js
-      const botMessage = { role: 'assistant', content: response };
+      console.log('DASHBOARD GOT:', responseText); // We see this working!
+  
+      // Add bot response - make sure this exact structure is followed
+      const botMessage = { role: 'assistant', content: responseText };
       setMessages(prev => ({
         ...prev,
         [selectedBot.id]: [...(prev[selectedBot.id] || []), botMessage]
       }));
+  
+      // Return the response text for ChatInterface
+      return responseText;
+  
     } catch (error) {
-      console.error('Error generating response:', error);
+      console.error('Error:', error);
       const errorMessage = { 
         role: 'assistant', 
-        content: "I'm having trouble processing that response. Please try again! 🤖" 
+        content: "Let's try that again..." 
       };
       setMessages(prev => ({
         ...prev,
@@ -844,6 +844,15 @@ const Dashboard = () => {
               messages={messages[selectedBot.id] || []}
               chatHistory={messages}
               personalityId={selectedBot.id}
+              onMessagesUpdate={(newMessages) => {
+                setMessages(prev => ({
+                  ...prev,
+                  [selectedBot.id]: newMessages.filter(msg => 
+                    msg.role === 'user' || 
+                    msg.role === 'assistant'
+                  )
+                }));
+              }}
             />
           ) : (
             <WelcomeScreen>

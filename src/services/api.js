@@ -269,35 +269,28 @@ export const generateResponse = async (message, botId, { recentMessages = [] }) 
     // Try to get response
     const response = await generateChatResponse(message, botId, { recentMessages });
 
-    try {
-      // First try direct JSON parsing
-      const parsedResponse = JSON.parse(response);
-      if (parsedResponse && parsedResponse.response) {
+    const content = response;
+    console.log('Raw content:', content);
+
+    // Add closing brace if missing
+    let jsonContent = content;
+    if (content.includes('{') && !content.trim().endsWith('}')) {
+      jsonContent = content + '}';
+    }
+
+    // Now parse the properly closed JSON
+    const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsedResponse = JSON.parse(jsonMatch[0]);
+      if (parsedResponse.response) {
+        console.log('Parsed response:', parsedResponse.response);
         return parsedResponse.response;
       }
-    } catch (e) {
-      // If direct parsing fails, try to extract JSON from the response
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsedJson = JSON.parse(jsonMatch[0]);
-        if (parsedJson.response) {
-          return parsedJson.response;
-        }
-      }
     }
 
-    // If all parsing attempts fail, return a friendly error
-    return "I'm having trouble understanding my own thoughts. Could you rephrase that? 🤔";
-
+    return content;
   } catch (error) {
-    console.error('Error generating response:', error);
-
-    if (error.message.includes('API request failed')) {
-      return "I'm having trouble connecting to my brain right now. Please try again in a moment! 🤖";
-    } else if (error.message.includes('Invalid bot personality')) {
-      return "Oops! It seems I'm having an identity crisis. Please try selecting a different personality! 🤔";
-    } else {
-      return "I seem to be malfunctioning. Let me reboot my circuits and try again! ⚡";
-    }
+    console.error('API Error:', error);
+    return "I'm having trouble responding right now...";
   }
 };
