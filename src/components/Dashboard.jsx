@@ -667,7 +667,6 @@ const Dashboard = () => {
   const { botId } = useParams();
   const [messages, setMessages] = useState(() => {
     try {
-      // Initialize messages from localStorage if available
       const savedMessages = localStorage.getItem('chatMessages');
       return savedMessages ? JSON.parse(savedMessages) : {};
     } catch (error) {
@@ -681,6 +680,7 @@ const Dashboard = () => {
   const [showBotInfo, setShowBotInfo] = useState(false);
   const [expandedGenres, setExpandedGenres] = useState({});
   const [chatHistory, setChatHistory] = useState({});
+  const [isTyping, setIsTyping] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
   const sidebarRef = useRef();
@@ -750,14 +750,17 @@ const Dashboard = () => {
       [selectedBot.id]: [...(prev[selectedBot.id] || []), userMessage]
     }));
   
+    // Set typing for current bot only
+    setIsTyping(prev => ({ ...prev, [selectedBot.id]: true }));
+  
     try {
       const responseText = await generateResponse(message, selectedBot.id, {
         recentMessages: messages[selectedBot.id] || []
       });
       
-      console.log('DASHBOARD GOT:', responseText); // We see this working!
+      console.log('DASHBOARD GOT:', responseText);
   
-      // Add bot response - make sure this exact structure is followed
+      // Add bot response
       const botMessage = { role: 'assistant', content: responseText };
       setMessages(prev => ({
         ...prev,
@@ -777,6 +780,9 @@ const Dashboard = () => {
         ...prev,
         [selectedBot.id]: [...(prev[selectedBot.id] || []), errorMessage]
       }));
+    } finally {
+      // Clear typing for current bot only
+      setIsTyping(prev => ({ ...prev, [selectedBot.id]: false }));
     }
   };
 
@@ -893,6 +899,7 @@ const Dashboard = () => {
                   )
                 }));
               }}
+              isTyping={isTyping[selectedBot?.id] || false}
             />
           ) : (
             <WelcomeScreen>
