@@ -18,7 +18,7 @@ const App = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<Navigate to="/dashboard/nova" replace />} />
           <Route path="/dashboard/:botId" element={<Dashboard />} />
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppContainer>
     </Router>
