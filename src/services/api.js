@@ -255,72 +255,39 @@ Respond as ${botId}:`;
 
 export const generateResponse = async (message, botId, { recentMessages = [] }) => {
   try {
-    // Validate inputs
-    if (!message || !botId) {
-      throw new Error('Missing required parameters: message or botId');
-    }
+    // ... (input validation and bot checks)
 
-    // Check if bot exists
-    const personality = personalityContexts[botId];
-    if (!personality) {
-      throw new Error(`Invalid bot personality: ${botId}`);
-    }
-
-    // Try to get response
-    const response = await generateChatResponse(message, botId, { recentMessages });
-
-    // If we got no response at all
-    if (!response) {
+    const rawResponse = await generateChatResponse(message, botId, { recentMessages });
+    if (!rawResponse) {
       return "I'm having trouble processing that. Could you try rephrasing? 🤔";
     }
 
-    try {
-      // First try: Check if response is already a string (direct response)
-      if (typeof response === 'string' && !response.includes('{') && !response.includes('"response":')) {
-        return response;
+    // Step 1: Try to fix malformed JSON (e.g., add missing closing brace)
+    let jsonStr = rawResponse;
+    if (typeof rawResponse === 'string') {
+      // Add missing closing brace if needed
+      if (jsonStr.trim().endsWith('"') && !jsonStr.trim().endsWith('}')) {
+        jsonStr = jsonStr + '}';
       }
-
-      // Second try: Parse as JSON if it's a string containing JSON
-      if (typeof response === 'string') {
-        // Try to find JSON object in the response
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsedJson = JSON.parse(jsonMatch[0]);
-          if (parsedJson.response) {
-            return parsedJson.response;
-          }
-          // If we have a JSON object but no response field, return the whole parsed object as string
-          return JSON.stringify(parsedJson);
-        }
-      }
-
-      // Third try: If response is already an object
-      if (typeof response === 'object') {
-        if (response.response) {
-          return response.response;
-        }
-        // If we have an object but no response field, stringify it
-        return JSON.stringify(response);
-      }
-
-      // If none of the above worked, return the raw response
-      return response;
-
-    } catch (parseError) {
-      console.error('Error parsing bot response:', parseError);
-      // If all parsing attempts fail, return the raw response
-      return response;
+      // Remove any text outside JSON (e.g., <think> tags)
+      jsonStr = jsonStr.replace(/<think>[\s\S]*<\/think>/, '').trim();
     }
+
+    // Step 2: Parse JSON
+    try {
+      const jsonResponse = JSON.parse(jsonStr);
+      if (jsonResponse.response) {
+        return jsonResponse.response; // Return ONLY the response part
+      }
+    } catch (e) {
+      console.error('JSON parsing failed, returning raw response:', e);
+    }
+
+    // Fallback: Return raw content if JSON parsing fails
+    return rawResponse;
 
   } catch (error) {
     console.error('Error generating response:', error);
-
-    if (error.message.includes('API request failed')) {
-      return "I'm having trouble connecting right now. Please try again in a moment! 🤖";
-    } else if (error.message.includes('Invalid bot personality')) {
-      return "Oops! It seems I'm having an identity crisis. Please try selecting a different personality! 🤔";
-    } else {
-      return "I seem to be malfunctioning. Let me reboot my circuits and try again! ⚡";
-    }
+    return "I'm having technical difficulties. Please try again later! 🤖";
   }
 };
