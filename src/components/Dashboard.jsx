@@ -518,8 +518,8 @@ const GenreHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  background: ${props => props.theme.secondary};
-  color: ${props => props.theme.textSecondary};
+  background: ${props => props.isActiveGenre ? props.theme.hover : props.theme.secondary};
+  color: ${props => props.isActiveGenre ? props.theme.accent : props.theme.textSecondary};
   font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -528,10 +528,26 @@ const GenreHeader = styled.div`
   margin-top: 0.75rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  box-shadow: ${props => props.isActiveGenre ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none'};
+  border: 1px solid ${props => props.isActiveGenre ? props.theme.border : 'transparent'};
 
   &:hover {
     background: ${props => props.theme.hover};
     color: ${props => props.theme.accent};
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 40%;
+    background: ${props => props.isActiveGenre ? props.theme.accent : 'transparent'};
+    border-radius: 0 4px 4px 0;
+    transition: all 0.2s ease;
   }
 `;
 
@@ -814,6 +830,13 @@ const Dashboard = () => {
     localStorage.removeItem('chatMessages');
   };
 
+  // Add this function to check if a genre is active
+  const isGenreActive = (genre) => {
+    if (!selectedBot) return false;
+    const bot = personalities.find(b => b.id === selectedBot.id);
+    return bot?.genre === genre;
+  };
+
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <DashboardContainer>
@@ -853,6 +876,7 @@ const Dashboard = () => {
                   <GenreHeader 
                     key={`header-${genre}`} 
                     onClick={() => toggleGenre(genre)}
+                    isActiveGenre={isGenreActive(genre)}
                   >
                     {genre}
                     <DropdownIcon isOpen={expandedGenres[genre]}>
@@ -873,7 +897,7 @@ const Dashboard = () => {
                         }}
                       >
                         <BotMainContent>
-                          <BotEmoji>{bot.emoji}</BotEmoji>
+                          <BotEmoji active={selectedBot?.id === bot.id}>{bot.emoji}</BotEmoji>
                           <BotName active={selectedBot?.id === bot.id}>{bot.name}</BotName>
                           <InfoButton
                             onClick={(e) => {
