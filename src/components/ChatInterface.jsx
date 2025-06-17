@@ -245,30 +245,26 @@ const ChatInterface = ({
 
   const handleSubmit = async () => {
     if (!inputValue.trim() || isTyping) return;
-  
+
     const message = inputValue.trim();
     setInputValue('');
     setIsTyping(true);
-  
+
     try {
       const response = await onSendMessage(message);
-      // Use the passed onMessagesUpdate prop correctly
-      if (typeof onMessagesUpdate === 'function') {
-        onMessagesUpdate([
-          ...messages,
-          { role: 'user', content: message },
-          { role: 'assistant', content: response }
-        ]);
+      if (!response) {
+        throw new Error('Empty response from bot');
       }
+
+      // Use the prop function instead of setMessages
+      onMessagesUpdate([...messages, { role: 'user', content: message }, { role: 'assistant', content: response }]);
+
     } catch (error) {
       console.error('Error sending message:', error);
-      if (typeof onMessagesUpdate === 'function') {
-        onMessagesUpdate([
-          ...messages,
-          { role: 'user', content: message },
-          { role: 'assistant', content: "I'm having trouble processing your request." }
-        ]);
-      }
+      onMessagesUpdate([...messages, { role: 'user', content: message }, {
+        role: 'assistant',
+        content: "I apologize, but I'm having trouble processing your request. Please try again."
+      }]);
     } finally {
       setIsTyping(false);
     }
@@ -290,7 +286,7 @@ const ChatInterface = ({
 
   // Calculate if we have enough data for the vibes report
   const MIN_MESSAGES_REQUIRED = 10;
-  const MIN_BOTS_INTERACTED = 5;
+  const MIN_BOTS_INTERACTED = 7;
   const hasEnoughData = Object.values(chatHistory || {}).reduce((acc, messages) => {
     if (Array.isArray(messages) && messages.length >= MIN_MESSAGES_REQUIRED) {
       return acc + 1;

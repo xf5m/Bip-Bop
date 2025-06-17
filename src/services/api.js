@@ -255,39 +255,49 @@ Respond as ${botId}:`;
 
 export const generateResponse = async (message, botId, { recentMessages = [] }) => {
   try {
-    // ... (input validation and bot checks)
-
-    const rawResponse = await generateChatResponse(message, botId, { recentMessages });
-    if (!rawResponse) {
-      return "I'm having trouble processing that. Could you try rephrasing? 🤔";
+    // Validate inputs
+    if (!message || !botId) {
+      throw new Error('Missing required parameters: message or botId');
     }
 
-    // Step 1: Try to fix malformed JSON (e.g., add missing closing brace)
-    let jsonStr = rawResponse;
-    if (typeof rawResponse === 'string') {
-      // Add missing closing brace if needed
-      if (jsonStr.trim().endsWith('"') && !jsonStr.trim().endsWith('}')) {
-        jsonStr = jsonStr + '}';
-      }
-      // Remove any text outside JSON (e.g., <think> tags)
-      jsonStr = jsonStr.replace(/<think>[\s\S]*<\/think>/, '').trim();
+    // Check if bot exists
+    const personality = personalityContexts[botId];
+    if (!personality) {
+      throw new Error(`Invalid bot personality: ${botId}`);
     }
 
-    // Step 2: Parse JSON
+    // Try to get response
+    const response = await generateChatResponse(message, botId, { recentMessages });
+
     try {
-      const jsonResponse = JSON.parse(jsonStr);
-      if (jsonResponse.response) {
-        return jsonResponse.response; // Return ONLY the response part
+      // First try direct JSON parsing
+      const parsedResponse = JSON.parse(response);
+      if (parsedResponse && parsedResponse.response) {
+        return parsedResponse.response;
       }
     } catch (e) {
-      console.error('JSON parsing failed, returning raw response:', e);
+      // If direct parsing fails, try to extract JSON from the response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsedJson = JSON.parse(jsonMatch[0]);
+        if (parsedJson.response) {
+          return parsedJson.response;
+        }
+      }
     }
 
-    // Fallback: Return raw content if JSON parsing fails
-    return rawResponse;
+    // If all parsing attempts fail, return a friendly error
+    return "I'm having trouble understanding my own thoughts. Could you rephrase that? 🤔";
 
   } catch (error) {
     console.error('Error generating response:', error);
-    return "I'm having technical difficulties. Please try again later! 🤖";
+
+    if (error.message.includes('API request failed')) {
+      return "I'm having trouble connecting to my brain right now. Please try again in a moment! 🤖";
+    } else if (error.message.includes('Invalid bot personality')) {
+      return "Oops! It seems I'm having an identity crisis. Please try selecting a different personality! 🤔";
+    } else {
+      return "I seem to be malfunctioning. Let me reboot my circuits and try again! ⚡";
+    }
   }
 };

@@ -714,77 +714,43 @@ const Dashboard = () => {
     setShowBotInfo(false);
   };
 
- 
-
-  // 1. Load saved messages on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('chatMessages');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Validate the loaded data matches expected format
-        if (typeof parsed === 'object' && !Array.isArray(parsed)) {
-          setMessages(parsed);
-        } else {
-          localStorage.removeItem('chatMessages');
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load chat messages:', e);
-      localStorage.removeItem('chatMessages');
-    }
-  }, []);
-
-  // 2. Save messages whenever they change (with debounce)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      try {
-        localStorage.setItem('chatMessages', JSON.stringify(messages));
-      } catch (e) {
-        console.error('Failed to save messages:', e);
-      }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [messages]);
-
-
   const handleSendMessage = async (message) => {
     if (!selectedBot) return;
-    
-    setMessages(prev => {
-      const newMessages = {
-        ...prev,
-        [selectedBot.id]: [...(prev[selectedBot.id] || []), { role: 'user', content: message }]
-      };
-      return newMessages;
-    });
+
+    // Add user message
+    const userMessage = { role: 'user', content: message };
+    setMessages(prev => ({
+      ...prev,
+      [selectedBot.id]: [...(prev[selectedBot.id] || []), userMessage]
+    }));
 
     try {
+      // Get bot response
       const response = await generateResponse(message, selectedBot.id, {
         recentMessages: messages[selectedBot.id] || []
       });
       
+      // Make sure we have a valid response
+      if (!response) {
+        throw new Error('Empty response from bot');
+      }
+
+      // Add bot response - use the response directly since it's already processed in api.js
+      const botMessage = { role: 'assistant', content: response };
       setMessages(prev => ({
         ...prev,
-        [selectedBot.id]: [...(prev[selectedBot.id] || []), { role: 'assistant', content: response }]
+        [selectedBot.id]: [...(prev[selectedBot.id] || []), botMessage]
       }));
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error generating response:', error);
+      const errorMessage = { 
+        role: 'assistant', 
+        content: "I'm having trouble processing that response. Please try again! 🤖" 
+      };
       setMessages(prev => ({
         ...prev,
-        [selectedBot.id]: [...(prev[selectedBot.id] || []), { 
-          role: 'assistant', 
-          content: "I'm having trouble processing that. Please try again! 🤖" 
-        }]
+        [selectedBot.id]: [...(prev[selectedBot.id] || []), errorMessage]
       }));
-    }
-  };
-
-  // 4. Clear history function
-  const clearHistory = () => {
-    if (window.confirm('Clear all chat history?')) {
-      localStorage.removeItem('chatMessages');
-      setMessages({});
     }
   };
 
