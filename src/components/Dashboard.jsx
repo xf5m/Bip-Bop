@@ -201,6 +201,7 @@ const BotItem = styled.div`
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
   background: ${props => props.active ? props.theme.hover : 'transparent'};
   border: 1px solid ${props => props.active ? props.theme.accent : 'transparent'};
   
@@ -208,12 +209,32 @@ const BotItem = styled.div`
     background: ${props => props.theme.hover};
     transform: translateX(4px);
   }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 60%;
+    background: ${props => props.active ? props.theme.accent : 'transparent'};
+    border-radius: 0 4px 4px 0;
+    transition: all 0.2s ease;
+  }
+
+  &:hover::before {
+    height: ${props => props.active ? '60%' : '30%'};
+    background: ${props => props.active ? props.theme.accent : props.theme.border};
+  }
 `;
 
 const BotMainContent = styled.div`
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  position: relative;
+  z-index: 1;
 `;
 
 const BotEmoji = styled.div`
@@ -225,10 +246,12 @@ const BotEmoji = styled.div`
   height: 2.5rem;
   background: ${props => props.theme.hover};
   border-radius: 8px;
-  transition: transform 0.2s ease;
+  transition: all 0.2s ease;
+  border: 1px solid ${props => props.active ? props.theme.accent : 'transparent'};
+  transform-origin: center;
 
   ${BotItem}:hover & {
-    transform: scale(1.1);
+    transform: scale(1.1) rotate(-5deg);
   }
 `;
 
@@ -237,6 +260,11 @@ const BotName = styled.span`
   font-weight: ${props => props.active ? '600' : '500'};
   flex: 1;
   font-size: 1rem;
+  transition: all 0.2s ease;
+
+  ${BotItem}:hover & {
+    color: ${props => props.active ? props.theme.accent : props.theme.textSecondary};
+  }
 `;
 
 const BotGenre = styled.span`
