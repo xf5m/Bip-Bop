@@ -248,10 +248,18 @@ const ChatInterface = ({
   
     const message = inputValue.trim();
     setInputValue('');
+
+    // Add user message immediately
+    onMessagesUpdate([
+      ...messages,
+      { role: 'user', content: message }
+    ]);
   
     try {
       const responseText = await onSendMessage(message);
+      console.log('Response received in ChatInterface:', responseText);
       
+      // Add bot response
       onMessagesUpdate([
         ...messages,
         { role: 'user', content: message },
@@ -265,6 +273,7 @@ const ChatInterface = ({
       console.error('Failed to get response:', error);
       onMessagesUpdate([
         ...messages,
+        { role: 'user', content: message },
         { 
           role: 'assistant', 
           content: "I'm having trouble responding. Try again?" 

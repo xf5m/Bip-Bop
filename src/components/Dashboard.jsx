@@ -742,44 +742,30 @@ const Dashboard = () => {
 
   const handleSendMessage = async (message) => {
     if (!selectedBot) return;
-  
-    // Add user message first
-    const userMessage = { role: 'user', content: message };
-    setMessages(prev => ({
-      ...prev,
-      [selectedBot.id]: [...(prev[selectedBot.id] || []), userMessage]
-    }));
-  
+
     // Set typing for current bot only
     setIsTyping(prev => ({ ...prev, [selectedBot.id]: true }));
-  
+
     try {
       const responseText = await generateResponse(message, selectedBot.id, {
         recentMessages: messages[selectedBot.id] || []
       });
       
       console.log('DASHBOARD GOT:', responseText);
-  
+
       // Add bot response
       const botMessage = { role: 'assistant', content: responseText };
       setMessages(prev => ({
         ...prev,
         [selectedBot.id]: [...(prev[selectedBot.id] || []), botMessage]
       }));
-  
+
       // Return the response text for ChatInterface
       return responseText;
-  
+
     } catch (error) {
       console.error('Error:', error);
-      const errorMessage = { 
-        role: 'assistant', 
-        content: "Let's try that again..." 
-      };
-      setMessages(prev => ({
-        ...prev,
-        [selectedBot.id]: [...(prev[selectedBot.id] || []), errorMessage]
-      }));
+      return "Let's try that again...";
     } finally {
       // Clear typing for current bot only
       setIsTyping(prev => ({ ...prev, [selectedBot.id]: false }));
