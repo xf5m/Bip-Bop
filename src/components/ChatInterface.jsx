@@ -221,10 +221,10 @@ const ChatInterface = ({
   messages = [],
   chatHistory = {},
   personalityId,
-  onMessagesUpdate  // Add this prop
+  onMessagesUpdate,
+  isTyping
 }) => {
   const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [showVibesReport, setShowVibesReport] = useState(false);
   const chatAreaRef = useRef(null);
   const inputRef = useRef(null);
@@ -248,7 +248,6 @@ const ChatInterface = ({
   
     const message = inputValue.trim();
     setInputValue('');
-    setIsTyping(true);
   
     try {
       const responseText = await onSendMessage(message);
@@ -271,8 +270,6 @@ const ChatInterface = ({
           content: "I'm having trouble responding. Try again?" 
         }
       ]);
-    } finally {
-      setIsTyping(false);
     }
   };
 
