@@ -176,31 +176,41 @@ const generateChatResponse = async (message, botId, { recentMessages = [] }) => 
     }
 
     const data = await response.json();
-    console.log('Raw API response data:', data); // Logging raw API response data
+    console.log('Raw API response data:', data);
+    
     if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
       throw new Error('Invalid API response structure');
     }
 
-    const content = data.choices[0].message.content;
-    console.log('Raw API response content:', content); // Logging raw API response content
+    let content = data.choices[0].message.content;
+    console.log('Raw API response content:', content);
 
-    // Extract only the response part from the API output
-    if (content.includes('"response":')) {
-      try {
-        // Find the JSON object in the response
-        const jsonMatch = content.match(/\{[\s\S]*?\}(?=[\s]*$)/);
-        if (jsonMatch) {
-          const parsedJson = JSON.parse(jsonMatch[0]);
-          if (parsedJson.response) {
-            return parsedJson.response;
-          }
+    // Sanitize control characters and escape sequences
+    content = content
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+      .replace(/\\[^"\\\/bfnrtu]/g, '\\\\'); // Escape invalid escape sequences
+
+    // Try to extract JSON from the content
+    try {
+      // Look for the last occurrence of a JSON object
+      const jsonMatch = content.match(/\{(?:[^{}]|(\{[^{}]*\}))*\}(?=[^{]*$)/);
+      if (jsonMatch) {
+        const jsonStr = jsonMatch[0];
+        const parsedJson = JSON.parse(jsonStr);
+        
+        if (parsedJson.response) {
+          // Return just the response field
+          return parsedJson.response;
         }
-      } catch (e) {
-        console.error('Failed to parse JSON response:', e);
       }
+      
+      // If we couldn't parse JSON or find response field, return sanitized content
+      return content;
+    } catch (e) {
+      console.error('Failed to parse JSON response:', e);
+      // Return sanitized content if JSON parsing fails
+      return content;
     }
-
-    return content;
   } catch (error) {
     console.error('Error in generateChatResponse:', error);
     throw new Error(`Failed to generate response: ${error.message}`);
