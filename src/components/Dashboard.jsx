@@ -665,7 +665,16 @@ const personalities = [
 
 const Dashboard = () => {
   const { botId } = useParams();
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      // Initialize messages from localStorage if available
+      const savedMessages = localStorage.getItem('chatMessages');
+      return savedMessages ? JSON.parse(savedMessages) : {};
+    } catch (error) {
+      console.error('Error loading messages from localStorage:', error);
+      return {};
+    }
+  });
   const [selectedBot, setSelectedBot] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -676,13 +685,30 @@ const Dashboard = () => {
   const location = useLocation();
   const sidebarRef = useRef();
 
-  // Initialize messages state for each bot
+  // Save messages to localStorage whenever they change
   useEffect(() => {
-    const initialMessages = {};
+    try {
+      localStorage.setItem('chatMessages', JSON.stringify(messages));
+    } catch (error) {
+      console.error('Error saving messages to localStorage:', error);
+    }
+  }, [messages]);
+
+  // Initialize messages state for each bot if not in localStorage
+  useEffect(() => {
+    const initialMessages = { ...messages };
+    let needsUpdate = false;
+
     personalities.forEach(bot => {
-      initialMessages[bot.id] = [];
+      if (!initialMessages[bot.id]) {
+        initialMessages[bot.id] = [];
+        needsUpdate = true;
+      }
     });
-    setMessages(initialMessages);
+
+    if (needsUpdate) {
+      setMessages(initialMessages);
+    }
   }, []);
 
   // Handle bot selection
@@ -752,6 +778,20 @@ const Dashboard = () => {
         [selectedBot.id]: [...(prev[selectedBot.id] || []), errorMessage]
       }));
     }
+  };
+
+  // Clear chat history for current bot
+  const clearChat = () => {
+    setMessages(prevMessages => ({
+      ...prevMessages,
+      [botId]: []
+    }));
+  };
+
+  // Clear all chat histories
+  const clearAllChats = () => {
+    setMessages({});
+    localStorage.removeItem('chatMessages');
   };
 
   return (
